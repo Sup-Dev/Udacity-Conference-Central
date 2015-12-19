@@ -8,9 +8,10 @@ $Id: conference.py,v 1.25 2014/05/24 23:42:19 wesc Exp wesc $
 
 created by wesc on 2014 apr 21
 
+original author wesc+api@google.com (Wesley Chun)
 """
 
-__author__ = 'wesc+api@google.com (Wesley Chun)'
+__author__ = 'Sourabh Dev'
 
 
 from datetime import datetime
