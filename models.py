@@ -126,19 +126,41 @@ class Session(ndb.Model):
     """Session -- Session object"""
     name = ndb.StringProperty(required=True)
     highlights = ndb.StringProperty(required=True)
+    speaker_key = ndb.StringProperty()
     speaker = ndb.StringProperty(required=True)
     duration = ndb.IntegerProperty()
     type_of_session = ndb.StringProperty()
-    date = ndb.DateProperty()
-    start_time = ndb.TimeProperty()
+    date = ndb.DateTimeProperty()
 
 
 class SessionForm(messages.Message):
     """SessionForm -- Session outbound form message"""
     name = messages.StringField(1)
     highlights = messages.StringField(2, repeated=True)
-    speaker = messages.StringField(3)
-    duration = messages.IntegerField(4)
+    speaker_key = messages.StringField(3)
+    speaker = messages.StringField(4)
+    duration = messages.IntegerField(5)
     type_of_session = messages.StringField(5)
-    date = messages.StringField(6)          # DateField()
-    start_time = messages.IntegerField(7)   # TimeField()
+    date = messages.StringField(6)          # DateTimeField()
+    start_time = messages.StringField(8)    # TimeField()
+    websafekey = messages.StringField(9)
+
+
+class Speaker(ndb.Model):
+    """Speaker -- Speaker object"""
+    displayName = ndb.StringProperty(required=True)
+    profileKey = ndb.StringProperty() #if speaker is also an attendee
+    biography = ndb.StringProperty()
+
+
+class SpeakerForm(messages.Message):
+    """SpeakerForm -- create Speaker form message"""
+    displayName = messages.StringField(1)
+    profileKey = messages.StringField(2)
+    biography = messages.StringField(3)
+    websafeKey = messages.StringField(4)
+
+
+class SpeakerForms(messages.Message):
+    """SpeakerForm -- multiple Speaker outbound form message"""
+    items = messages.MessageField(SpeakerForm, 1, repeated=True)
