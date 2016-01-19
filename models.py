@@ -130,19 +130,19 @@ class Session(ndb.Model):
     speaker = ndb.StringProperty(required=True)
     duration = ndb.IntegerProperty()
     type_of_session = ndb.StringProperty()
-    date = ndb.DateTimeProperty()
+    start_date_time = ndb.DateTimeProperty()
 
 
 class SessionForm(messages.Message):
     """SessionForm -- Session outbound form message"""
     name = messages.StringField(1)
     highlights = messages.StringField(2, repeated=True)
-    speaker_key = messages.StringField(3)
+    speakerKey = messages.StringField(3)
     speaker = messages.StringField(4)
     duration = messages.IntegerField(5)
-    type_of_session = messages.StringField(5)
-    date = messages.StringField(6)          # DateTimeField()
-    start_time = messages.StringField(8)    # TimeField()
+    type_of_session = messages.StringField(6)
+    start_date = messages.StringField(7)          # DateTimeField()
+    start_time = messages.StringField(8)          # TimeField()
     websafekey = messages.StringField(9)
 
 

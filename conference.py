@@ -37,6 +37,9 @@ from models import ConferenceForms
 from models import ConferenceQueryForm
 from models import ConferenceQueryForms
 from models import TeeShirtSize
+from models import Session
+from models import SessionForm
+from models import SpeakerForms
 
 from settings import WEB_CLIENT_ID
 from settings import ANDROID_CLIENT_ID
@@ -57,6 +60,11 @@ DEFAULTS = {
     "maxAttendees": 0,
     "seatsAvailable": 0,
     "topics": ["Default", "Topic"],
+}
+
+SESSION_DEFAULTS = {
+    'highlights': 'Announcement pending',
+    'duration': 30,
 }
 
 OPERATORS = {
@@ -82,6 +90,11 @@ CONF_GET_REQUEST = endpoints.ResourceContainer(
 
 CONF_POST_REQUEST = endpoints.ResourceContainer(
     ConferenceForm,
+    websafeConferenceKey=messages.StringField(1),
+)
+
+SESSION_POST_REQUEST = endpoints.ResourceContainer(
+    SessionForm,
     websafeConferenceKey=messages.StringField(1),
 )
 
@@ -534,5 +547,103 @@ class ConferenceApi(remote.Service):
             items=[self._copyConferenceToForm(conf, "") for conf in q]
         )
 
+
+# - - - Session - - - - - - - - - - - - - - - - - - - -
+
+def _copySessionToForm(self, session, displayName=None):
+    """Copy relevant fields from Conference to ConferenceForm."""
+    sf = SessionForm()
+    for field in sf.all_fields():
+        if hasattr(session, field.name):
+            setattr(sf, field.name, getattr(session, field.name))
+        elif field.name == "websafeKey":
+            setattr(sf, field.name, session.key.urlsafe())
+        elif field.name == "speaker":
+            setattr(sf, field.name, displayName)
+
+    # split start_date_time into start_date and start_time
+        date_item = getattr(session, 'start_date_time')
+        if date_item:
+            if field.name == 'start_date':
+                setattr(sf, field.name, str(date_item.date()))
+            elif field.name == 'start_time':
+                setattr(sf, field.name, str(date_item.time().strftime('%H:%M')))
+    sf.check_initialized()
+    return sf
+
+
+def _createSessionObject(self, request):
+    # preload necessary data items
+    user = endpoints.get_current_user()
+    if not user:
+        raise endpoints.UnauthorizedException('Authorization required')
+    user_id = getUserId(user)
+
+    if not request.name:
+        raise endpoints.BadRequestException("Conference 'name' field required")
+
+    # copy ConferenceForm/ProtoRPC Message into dict
+    data = {field.name: getattr(request, field.name) for field in request.all_fields()}
+    del data['websafeKey']
+    del data['websafeConferenceKey']
+
+    # add default values for those missing (both data model & outbound Message)
+    for df in SESSION_DEFAULTS:
+        if data[df] in (None, []):
+            data[df] = SESSION_DEFAULTS[df]
+            setattr(request, df, SESSION_DEFAULTS[df])
+
+    # check if type of session exists
+    if data['type_of_session'] is None:
+        del data['type_of_session']
+    else:
+        data['type_of_session'] = str(data['type_of_session'])
+
+    # convert dates from strings to Date objects; set month based on start_date
+    if data['start_date'] and data['start_time']:
+        data['start_date_time'] = datetime.strptime(data['start_date'][:10] + ' ' + data['start_time'][:5],
+                                                    "%Y-%m-%d").date()
+    del data['start_date']
+    del data['start_time']
+
+    # get the conference linked to this session
+    conf = ndb.Key(urlsafe=request.websafeConferenceKey).get()
+
+    # check that conference exists
+    if not conf:
+        raise endpoints.NotFoundException(
+            'No conference found with key: %s' % request.websafeConferenceKey)
+
+    # check that user is owner
+    if user_id != conf.organizerUserId:
+        raise endpoints.ForbiddenException(
+            'Only the owner can update the conference.')
+
+    # generate Session Key based on Conference
+    s_id = Session.allocate_ids(size=1, parent=conf.key)[0]
+    s_key = ndb.Key(Conference, s_id, parent=conf.key)
+    data['key'] = s_key
+
+    # check for speaker key
+    if data['speaker_key']:
+        speaker = ndb.Key(urlsafe=request.speakerKey).get()
+
+        data['speaker'] = speaker.displayName
+
+    # create Session
+    # creation of Session & return (modified) SessionForm
+    session = Session(**data)
+    session.put()
+    taskqueue.add(params={'sessionKey': s_key.urlsafe(),
+                          'speakerKey': data['speakerKey'],
+                          'speaker': data['speaker']},
+                  url='/tasks/check_speaker'
+                  )
+    return self._copySessionToForm(session)
+
+@endpoints.method(SESSION_POST_REQUEST, SessionForm, path='conference/sessions/{websafeConferenceKey}')
+def createSession(self, request):
+    """Create a new Session object for a conference"""
+    return self._createSessionObject(request)
 
 api = endpoints.api_server([ConferenceApi])     # register API
