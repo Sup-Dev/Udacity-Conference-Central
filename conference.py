@@ -39,7 +39,7 @@ from models import ConferenceQueryForms
 from models import TeeShirtSize
 from models import Session
 from models import SessionForm
-from models import SpeakerForms
+from models import SessionForms
 
 from settings import WEB_CLIENT_ID
 from settings import ANDROID_CLIENT_ID
@@ -93,9 +93,25 @@ CONF_POST_REQUEST = endpoints.ResourceContainer(
     websafeConferenceKey=messages.StringField(1),
 )
 
+SESSION_GET_REQUEST = endpoints.ResourceContainer(
+    message_types.VoidMessage,
+    websafeConferenceKey=messages.StringField(1),
+)
+
 SESSION_POST_REQUEST = endpoints.ResourceContainer(
     SessionForm,
     websafeConferenceKey=messages.StringField(1),
+)
+
+SESSION_GET_REQUEST_BY_SPEAKER = endpoints.ResourceContainer(
+    message_types.VoidMessage,
+    speakerKey=messages.StringField(1),
+)
+
+SESSION_GET_REQUEST_BY_TYPE = endpoints.ResourceContainer(
+    message_types.VoidMessage,
+    websafeConferenceKey=messages.StringField(1),
+    type=messages.StringField(2),
 )
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -641,9 +657,63 @@ def _createSessionObject(self, request):
                   )
     return self._copySessionToForm(session)
 
-@endpoints.method(SESSION_POST_REQUEST, SessionForm, path='conference/sessions/{websafeConferenceKey}')
+
+@endpoints.method(SESSION_POST_REQUEST, SessionForm, path='conference/sessions/{websafeConferenceKey}',
+                  http_method='POST', name='createSession')
 def createSession(self, request):
     """Create a new Session object for a conference"""
     return self._createSessionObject(request)
+
+
+@endpoints.method(CONF_GET_REQUEST, SessionForm, path='conference/sessions/{websafeConferenceKey}',
+                  http_method='GET', name='getConferenceSessions')
+def getConferenceSessions(self, request):
+    """Gets all sessions related to a Conference"""
+    c_key = ndb.Key(urlsafe=request.websafeConferenceKey)
+
+    # get all sessions related to this key
+    sessions = Session.query(ancestor=c_key)
+
+    # send the values to SessionForms
+    items = list()
+    for session in sessions:
+        items.append(self._copySessionToForm(session))
+
+    return SessionForms(items=items)
+
+
+@endpoints.method(SESSION_GET_REQUEST_BY_TYPE, SessionForms, path='conference/sessions/{websafeConferenceKey}/{type}',
+                  http_method='GET', name='getConferenceSessionsByType')
+def getConferenceSessionsByType(self, request):
+    """Gets all sessions related to a Conference based on it's type"""
+    c_key = ndb.Key(urlsafe=request.websafeConferenceKey)
+
+    # get all sessions related to this key
+    sessions = Session.query(ancestor=c_key).filter(Session.type_of_session == request.type)
+
+    # send the values to SessionForms
+    items = list()
+    for session in sessions:
+        items.append(self._copySessionToForm(session))
+
+    return SessionForms(items=items)
+
+
+@endpoints.method(SESSION_GET_REQUEST_BY_SPEAKER, SessionForms, path='sessions/{speakerKey}',
+                  http_method='GET', name='getSessionsBySpeaker')
+def getSessionsBySpeaker(self, request):
+    """Gets all sessions related to a Conference based on it's speaker"""
+
+    # get all sessions related to yhe speaker
+    sessions = Session.query().filter(Session.speaker_key == request.speakerKey)
+
+    # send the values to SessionForms
+    items = list()
+    for session in sessions:
+        items.append(self._copySessionToForm(session))
+
+    return SessionForms(items=items)
+
+
 
 api = endpoints.api_server([ConferenceApi])     # register API

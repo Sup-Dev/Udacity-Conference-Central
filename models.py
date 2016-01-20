@@ -146,6 +146,11 @@ class SessionForm(messages.Message):
     websafekey = messages.StringField(9)
 
 
+class SessionForms(messages.Message):
+    """SessionForm -- multiple Session outbound form message"""
+    items = messages.MessageField(SessionForm, 1, repeated=True)
+
+
 class Speaker(ndb.Model):
     """Speaker -- Speaker object"""
     displayName = ndb.StringProperty(required=True)
