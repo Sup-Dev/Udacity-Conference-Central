@@ -811,7 +811,7 @@ def addSessionToWishlist(self, request):
 
 @endpoints.method(SESSION_WISHLIST_REQUEST, BooleanMessage, path='sessions/wishlist/delete/{websafeSessionKey}',
                   http_method='POST', name='addSessionToWishlist')
-def deleteSessionToWishlist(self, request):
+def deleteSessionInWishlist(self, request):
     """Remove the current session from user's wishlist"""
     return self._removeSession(request)
 
@@ -837,5 +837,33 @@ def getSessionsInWishlist(self, request):
 
     # return the SessionForm
     return SessionForms(items=items)
+
+
+@endpoints.method(message_types.VoidMessage, ConferenceForms, path='conference/partial',
+                  http_method='GET', name='getPartialConferences')
+def getPartialConferences(self, request):
+    """Get all conferences whose details are only filled partially"""
+    query = Conference.query(ndb.OR(Conference.description is None, Conference.startDate is None,
+                                    Conference.endDate is None))
+    items = list()
+    for item in query:
+        items.append(self._copyConferenceToForm(item, getattr(item.key.parent().get(), 'displayName')))
+
+    return ConferenceForms(items=items)
+
+
+@endpoints.method(message_types.VoidMessage, SpeakerForms, path='speakers',
+                  http_method='GET', name='getSpeakers')
+def getSpeakers(self, request):
+    """Get all speakers"""
+    query = Speaker.query()
+    items = list()
+    for item in query:
+        items.append(self._copySpeakerForm(item))
+
+    return SpeakerForms(items=items)
+
+
+
 
 api = endpoints.api_server([ConferenceApi])     # register API
