@@ -882,5 +882,11 @@ def getConferenceBefore(self, request):
     return SessionForms(items=items)
 
 
+@endpoints.method(message_types.VoidMessage, StringMessage, path='featuredSpeaker',
+                  http_method='GET', name='getFeaturedSpeaker')
+def getFeaturedSpeaker(self, request):
+    """Get speaker from task queue"""
+    return StringMessage(data=memcache.get(MEMCACHE_SPEAKER_KEY) or "")
+
 
 api = endpoints.api_server([ConferenceApi])     # register API
