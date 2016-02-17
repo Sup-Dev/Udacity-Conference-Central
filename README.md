@@ -30,3 +30,28 @@ App Engine application for the Udacity training course.
 [4]: https://console.developers.google.com/
 [5]: https://localhost:8080/
 [6]: https://developers.google.com/appengine/docs/python/endpoints/endpoints_tool
+
+## Task 1 
+### Session and Speaker implementation
+
+The Session is linked to the Conference with the help of the conference key, hence a conference is always associate with the session. Also, I have separated the date and time fields so as to easily handle it.
+ 
+For the Speaker I have created a separate model with contains the name, biography and an extra profile field if the speaker choose to be an attendee. Also, note that I have added a speaker field in Session so as to associate a speaker with it. 
+
+## Task 3 
+### Additional Queries
+
+For the first query I have added an end point to fetch all those conferences which are only partially filled.
+ 
+In the next query I have added an end point to fetch all the speakers present.
+
+### Query Problem
+
+The query problem was that in case of non-workshop and before 7pm we had to compare in two different fields.
+
+To get around this issue, I simply split the problem into two stages. First, I get the items that are not workshops. Then, I checked through the *start_time* attribute for time related comparisons.
+
+## Task 4 
+## Featured Speaker
+
+Added a task queue to check for speaker and added it to memcache.

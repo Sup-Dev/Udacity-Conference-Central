@@ -23,6 +23,7 @@ from models import Session
 
 from conference import MEMCACHE_SPEAKER_KEY
 
+
 class SetAnnouncementHandler(webapp2.RequestHandler):
     def get(self):
         """Set Announcement in Memcache."""
