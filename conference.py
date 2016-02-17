@@ -40,6 +40,9 @@ from models import TeeShirtSize
 from models import Session
 from models import SessionForm
 from models import SessionForms
+from models import Speaker
+from models import SpeakerForm
+from models import SpeakerForms
 
 from settings import WEB_CLIENT_ID
 from settings import ANDROID_CLIENT_ID
@@ -114,6 +117,10 @@ SESSION_GET_REQUEST_BY_TYPE = endpoints.ResourceContainer(
     type=messages.StringField(2),
 )
 
+SESSION_WISHLIST_REQUEST = endpoints.ResourceContainer(
+    message_types.VoidMessage,
+    websafeSessionKey=messages.StringField(1),
+)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 
@@ -715,5 +722,120 @@ def getSessionsBySpeaker(self, request):
     return SessionForms(items=items)
 
 
+# - - - Speaker - - - - - - - - - - - - - - - - - - - -
+
+def _copySpeakerForm(self, speaker):
+    """Copy relevant fields from Speaker to SpeakerForm."""
+    sf = SpeakerForm()
+    for field in sf.all_fields():
+        if hasattr(speaker, field.name):
+            setattr(sf, field.name, getattr(speaker, field.name))
+        elif field.name == "websafeKey":
+            setattr(sf, field.name, speaker.key.urlsafe())
+    sf.check_initialized()
+    return sf
+
+
+def _createSpeakerObject(self, request):
+    user = endpoints.get_current_user()
+    if not user:
+        raise endpoints.UnauthorizedException('Authorization required')
+    user_id = getUserId(user)
+
+    if not request.name:
+        raise endpoints.BadRequestException("Conference 'name' field required")
+
+    # copy SpeakerForm/ProtoRPC Message into dict
+    data = {field.name: getattr(request, field.name) for field in request.all_fields()}
+    del data['websafeKey']
+
+    # generate Speaker key
+    s_id = Session.allocate_ids(size=1)[0]
+    s_key = ndb.Key(Speaker, s_id)
+
+    # create Speaker
+    speaker = Speaker(**data)
+    speaker.put()
+
+    return self._copySpeakerForm(speaker)
+
+
+@endpoints.method(SpeakerForm, SpeakerForm, path='speaker', http_method='POST', name='addSpeaker')
+def addSpeaker(self, request):
+    """Create a new speaker."""
+    return self._createSpeakerObject(request)
+
+
+def _addSession(self, request):
+    """Add a session to the wish list of a user"""
+    user = self._getProfileFromUser()
+
+    # current session
+    key = request.websafeSessionKey
+
+    # check if session already exists and add if it doesn't
+    if key in user.sessionKeysWishList:
+        raise ConflictException("This session already exists")
+    else:
+        user.sessionKeysWishList.append(key)
+
+    # update the data
+    user.put()
+    return BooleanMessage(data=True)
+
+
+def _removeSession(self, request):
+    """Remove a session from the wish list of a user"""
+    user = self._getProfileFromUser()
+
+    # current session
+    key = request.websafeSessionKey
+
+    # check if session already exists and add if it doesn't
+    if key in user.sessionKeysWishList:
+        user.sessionKeysWishList.remove(key)
+    else:
+        return BooleanMessage(data=False)
+
+    # update the data
+    user.put()
+    return BooleanMessage(data=True)
+
+
+@endpoints.method(SESSION_WISHLIST_REQUEST, BooleanMessage, path='sessions/wishlist/add/{websafeSessionKey}',
+                  http_method='POST', name='deleteSessionFromWishlist')
+def addSessionToWishlist(self, request):
+    """Add the current session to user's wishlist"""
+    return self._addSession(request)
+
+
+@endpoints.method(SESSION_WISHLIST_REQUEST, BooleanMessage, path='sessions/wishlist/delete/{websafeSessionKey}',
+                  http_method='POST', name='addSessionToWishlist')
+def deleteSessionToWishlist(self, request):
+    """Remove the current session from user's wishlist"""
+    return self._removeSession(request)
+
+
+@endpoints.method(message_types.VoidMessage, SessionForms, path='sessions/wishlist', http_method='GET',
+                  name='getSessionsInWishlist')
+def getSessionsInWishlist(self, request):
+    """Get all sessions from the users' wishlist"""
+    user = self._getProfileFromUser()
+
+    # get session keys
+    keys = list()
+    for key in user.sessionKeysWishList:
+        keys.append(ndb.Key(urlsafe=key))
+    sessions = ndb.get_multi(keys)
+
+    # get session items
+    items = list()
+    for session in sessions:
+        speaker = ndb.Key(urlsafe=session.speaker_key)
+        copy = self._copySessionToForm(session, speaker.displayName)
+        items.append(copy)
+
+    # return the SessionForm
+    return SessionForms(items=items)
 
 api = endpoints.api_server([ConferenceApi])     # register API
