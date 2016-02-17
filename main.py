@@ -45,6 +45,7 @@ class SendConfirmationEmailHandler(webapp2.RequestHandler):
         )
 
 
+# Task 4
 class CheckFeaturedSpeakerHandler(webapp2.RequestHandler):
     def post(self):
         """Set featured speaker."""

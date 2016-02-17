@@ -767,6 +767,7 @@ def addSpeaker(self, request):
     return self._createSpeakerObject(request)
 
 
+################## Task 2 #####################
 def _addSession(self, request):
     """Add a session to the wish list of a user"""
     user = self._getProfileFromUser()
@@ -840,6 +841,7 @@ def getSessionsInWishlist(self, request):
     return SessionForms(items=items)
 
 
+################## Task 3 #####################
 @endpoints.method(message_types.VoidMessage, ConferenceForms, path='conference/partial',
                   http_method='GET', name='getPartialConferences')
 def getPartialConferences(self, request):
@@ -882,6 +884,7 @@ def getConferenceBefore(self, request):
     return SessionForms(items=items)
 
 
+################## Task 4 #####################
 @endpoints.method(message_types.VoidMessage, StringMessage, path='featuredSpeaker',
                   http_method='GET', name='getFeaturedSpeaker')
 def getFeaturedSpeaker(self, request):
