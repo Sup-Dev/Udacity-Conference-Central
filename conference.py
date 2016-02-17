@@ -54,6 +54,7 @@ from utils import getUserId
 EMAIL_SCOPE = endpoints.EMAIL_SCOPE
 API_EXPLORER_CLIENT_ID = endpoints.API_EXPLORER_CLIENT_ID
 MEMCACHE_ANNOUNCEMENTS_KEY = "RECENT_ANNOUNCEMENTS"
+MEMCACHE_SPEAKER_KEY = "FEATURED_SPEAKER"
 ANNOUNCEMENT_TPL = ('Last chance to attend! The following conferences '
                     'are nearly sold out: %s')
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -863,6 +864,22 @@ def getSpeakers(self, request):
 
     return SpeakerForms(items=items)
 
+@endpoints.method(CONF_GET_REQUEST, SessionForms, path='conference/{websafeConferenceKey}/before/{hours}',
+                  http_method='GET', name='getConferenceBefore')
+def getConferenceBefore(self, request):
+    """Get non-workshop conferences before the given time"""
+    c_key = ndb.Key(urlsafe=request.websafeConferenceKey)
+
+    query = Session.query(ndb.AND(Session.type_of_session != 'WORKSHOP'), ancestor=c_key)
+
+    # get items before the given time
+    items = list()
+    for item in query:
+        hour = request.hours
+        if item.start_time.hour < hour:
+            items.append(self._copySessionToForm(item))
+
+    return SessionForms(items=items)
 
 
 
