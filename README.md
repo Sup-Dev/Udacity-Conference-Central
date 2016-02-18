@@ -34,7 +34,7 @@ App Engine application for the Udacity training course.
 ## Task 1 
 ### Session and Speaker implementation
 
-The Session is linked to the Conference with the help of the conference key, hence a conference is always associate with the session. Also, I have separated the date and time fields so as to easily handle it.
+The Session is linked to the Conference with the help of the conference key as Conference is an ancestor of the Session, hence a conference is always associate with the session. Also, I have separated the date and time fields so as to easily handle it.
  
 For the Speaker I have created a separate model with contains the name, biography and an extra profile field if the speaker choose to be an attendee. Also, note that I have added a speaker field in Session so as to associate a speaker with it. 
 
