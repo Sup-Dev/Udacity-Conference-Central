@@ -49,9 +49,12 @@ class SendConfirmationEmailHandler(webapp2.RequestHandler):
 class CheckFeaturedSpeakerHandler(webapp2.RequestHandler):
     def post(self):
         """Set featured speaker."""
-        speaker = self.request.get('speaker')
-        message = speaker + " is our featured speaker"
-        memcache.set(MEMCACHE_SPEAKER_KEY, message)
+        query = Session.query().filter(Session.speaker_key == self.request.get('speaker_key'))
+
+        if query.count() > 1:
+            speaker = self.request.get('speaker')
+            message = speaker + " is our featured speaker"
+            memcache.set(MEMCACHE_SPEAKER_KEY, message)
 
 app = webapp2.WSGIApplication([
     ('/crons/set_announcement', SetAnnouncementHandler),

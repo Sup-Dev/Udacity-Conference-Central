@@ -577,7 +577,7 @@ class ConferenceApi(remote.Service):
 
 # - - - Session - - - - - - - - - - - - - - - - - - - -
 
-def _copySessionToForm(self, session, displayName=None):
+def _copySessionToForm(self, session, name=None):
     """Copy relevant fields from Conference to ConferenceForm."""
     sf = SessionForm()
     for field in sf.all_fields():
@@ -586,7 +586,7 @@ def _copySessionToForm(self, session, displayName=None):
         elif field.name == "websafekey":
             setattr(sf, field.name, session.key.urlsafe())
         elif field.name == "speaker":
-            setattr(sf, field.name, displayName)
+            setattr(sf, field.name, name)
 
             # split start_date_time into start_date and start_time
         date_item = getattr(session, 'start_date_time')
@@ -607,11 +607,11 @@ def _createSessionObject(self, request):
     user_id = getUserId(user)
 
     if not request.name:
-        raise endpoints.BadRequestException("Conference 'name' field required")
+        raise endpoints.BadRequestException("Session 'name' field required")
 
     # copy ConferenceForm/ProtoRPC Message into dict
     data = {field.name: getattr(request, field.name) for field in request.all_fields()}
-    del data['websafeKey']
+    del data['websafekey']
     del data['websafeConferenceKey']
 
     # add default values for those missing (both data model & outbound Message)
@@ -733,6 +733,7 @@ def _copySpeakerForm(self, speaker):
 
 
 def _createSpeakerObject(self, request):
+    """Create Speaker object, returning SpeakerForm/request."""
     user = endpoints.get_current_user()
     if not user:
         raise endpoints.UnauthorizedException('Authorization required')
