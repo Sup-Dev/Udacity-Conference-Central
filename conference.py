@@ -866,7 +866,7 @@ def getConferenceBefore(self, request):
     """Get non-workshop conferences before the given time"""
     c_key = ndb.Key(urlsafe=request.websafeConferenceKey)
 
-    query = Session.query(ndb.AND(Session.type_of_session != 'WORKSHOP'), ancestor=c_key)
+    query = Session.query(ndb.AND(Session.type_of_session != 'WORKSHOP', ancestor=c_key))
 
     # get items before the given time
     items = list()
