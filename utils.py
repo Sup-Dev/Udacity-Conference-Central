@@ -4,7 +4,8 @@ import time
 import uuid
 
 from google.appengine.api import urlfetch
-from models import Profile
+from models import Conference
+
 
 def getUserId(user, id_type="email"):
     if id_type == "email":
@@ -31,7 +32,7 @@ def getUserId(user, id_type="email"):
                        % ('access_token', token))
             else:
                 time.sleep(wait)
-                wait = wait + i
+                wait += i
         return user.get('user_id', '')
 
     if id_type == "custom":
