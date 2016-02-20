@@ -589,12 +589,14 @@ class ConferenceApi(remote.Service):
                 setattr(sf, field.name, name)
 
                 # split start_date_time into start_date and start_time
-            date_item = getattr(session, 'start_date_time')
+            date_item = getattr(session, 'start_date')
             if date_item:
                 if field.name == 'start_date':
                     setattr(sf, field.name, str(date_item.date()))
-                elif field.name == 'start_time':
-                    setattr(sf, field.name, str(date_item.time().strftime('%H:%M')))
+            time_item = getattr(session, 'start_time')
+            if time_item:
+                if field.name == 'start_time':
+                    setattr(sf, field.name, str(time_item.time().strftime('%H:%M')))
         sf.check_initialized()
         return sf
 
@@ -645,7 +647,7 @@ class ConferenceApi(remote.Service):
 
         # check for speaker key
         if data['speaker_key']:
-            speaker = ndb.Key(urlsafe=request.speakerKey).get()
+            speaker = ndb.Key(urlsafe=request.speaker_key).get()
 
             data['speaker'] = speaker.displayName
 
@@ -654,7 +656,7 @@ class ConferenceApi(remote.Service):
         session = Session(**data)
         session.put()
         taskqueue.add(params={'sessionKey': s_key.urlsafe(),
-                              'speakerKey': data['speakerKey'],
+                              'speakerKey': data['speaker_key'],
                               'speaker': data['speaker']},
                       url='/tasks/check_speaker'
                       )
@@ -668,7 +670,7 @@ class ConferenceApi(remote.Service):
         return self._createSessionObject(request)
 
 
-    @endpoints.method(CONF_GET_REQUEST, SessionForm, path='conference/sessions/{websafeConferenceKey}',
+    @endpoints.method(CONF_GET_REQUEST, SessionForms, path='conference/sessions/{websafeConferenceKey}',
                       http_method='GET', name='getConferenceSessions')
     def getConferenceSessions(self, request):
         """Gets all sessions related to a Conference"""
@@ -681,7 +683,7 @@ class ConferenceApi(remote.Service):
         items = list()
         for session in sessions:
             items.append(self._copySessionToForm(session))
-
+        print(items)
         return SessionForms(items=items)
 
 
@@ -836,9 +838,9 @@ class ConferenceApi(remote.Service):
 
 
     ################## Task 3 #####################
-    @endpoints.method(message_types.VoidMessage, ConferenceForms, path='conference/partial',
-                      http_method='GET', name='getPartialConferences')
-    def getPartialConferences(self, request):
+    @endpoints.method(message_types.VoidMessage, SessionForms, path='conference/partial',
+                      http_method='GET', name='getPartialConferencesSessions')
+    def getPartialConferencesSessions(self, request):
         """Get all conferences whose details are only filled partially"""
         query = Conference.query(ndb.OR(Conference.description == None, Conference.startDate == None,
                                         Conference.endDate == None))
@@ -867,7 +869,7 @@ class ConferenceApi(remote.Service):
         """Get non-workshop conferences before the given time"""
         c_key = ndb.Key(urlsafe=request.websafeConferenceKey)
 
-        query = Session.query(ndb.AND(Session.type_of_session != 'WORKSHOP', ancestor=c_key))
+        query = Session.query(Session.type_of_session != 'WORKSHOP', ancestor=c_key)
 
         # get items before the given time
         items = list()
