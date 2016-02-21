@@ -39,7 +39,7 @@ The Session is linked to the Conference with the help of the conference key as C
 For the Speaker I have created a separate model with contains the name, biography and an extra profile field if the speaker choose to be an attendee. Also, note that I have added a speaker field in Session so as to associate a speaker with it.
  
 Session field entities:
-* highlights - An array of topic highlights for the session.
+* highlights - All the topics that are highlights for the session.
 * speaker - Name of the speaker.
 * duration - Total running time for the conference.
 * type_of_session - The category of the session it comes in - ex: workshops, walkthrough, demos etc
