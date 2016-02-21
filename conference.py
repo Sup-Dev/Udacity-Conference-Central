@@ -595,6 +595,7 @@ class ConferenceApi(remote.Service):
         return sf
 
     def _createSessionObject(self, request):
+        """Create or update Session object, returning SessionForm/request."""
         # preload necessary data items
         user = endpoints.get_current_user()
         if not user:
@@ -686,7 +687,7 @@ class ConferenceApi(remote.Service):
         return SessionForms(items=items)
 
 
-    @endpoints.method(SESSION_GET_REQUEST_BY_TYPE, SessionForms, path='conference/sessions/{websafeConferenceKey}/{type}',
+    @endpoints.method(SESSION_GET_REQUEST_BY_TYPE, SessionForms, path='conference/sessions/type/{websafeConferenceKey}/{type}',
                       http_method='GET', name='getConferenceSessionsByType')
     def getConferenceSessionsByType(self, request):
         """Gets all sessions related to a Conference based on it's type"""
@@ -703,7 +704,7 @@ class ConferenceApi(remote.Service):
         return SessionForms(items=items)
 
 
-    @endpoints.method(SESSION_GET_REQUEST_BY_SPEAKER, SessionForms, path='sessions/{speakerKey}',
+    @endpoints.method(SESSION_GET_REQUEST_BY_SPEAKER, SessionForms, path='sessions/speaker/{speakerKey}',
                       http_method='GET', name='getSessionsBySpeaker')
     def getSessionsBySpeaker(self, request):
         """Gets all sessions related to a Conference based on it's speaker"""

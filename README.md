@@ -78,6 +78,8 @@ The query problem was that in case of non-workshop and before 7pm we had to comp
 
 To get around this issue, I simply split the problem into two stages. First, I get the items that are not workshops and has conference as it's ancestor by using **ndb.AND** query. Then, I loop through all items received and check the *start_time* attribute of the item and check if the *hour* property is less than the number of **hours** received from the url for time related comparisons.
 
+I have given the solution to the problem in the endpoint **getConferenceBefore**.
+
 ## Task 4 
 ## Featured Speaker
 
