@@ -582,24 +582,17 @@ class ConferenceApi(remote.Service):
         sf = SessionForm()
         for field in sf.all_fields():
             if hasattr(session, field.name):
-                setattr(sf, field.name, getattr(session, field.name))
-            elif field.name == "websafekey":
-                setattr(sf, field.name, session.key.urlsafe())
-            elif field.name == "speaker":
-                setattr(sf, field.name, name)
+                if field.name == 'start_date' or field.name == 'start_time':
+                    setattr(sf, field.name, str(getattr(session, field.name)))
+                elif field.name == "websafekey":
+                    setattr(sf, field.name, session.key.urlsafe())
+                elif field.name == "speaker":
+                    setattr(sf, field.name, name)
+                else:
+                    setattr(sf, field.name, getattr(session, field.name))
 
-                # split start_date_time into start_date and start_time
-            date_item = getattr(session, 'start_date')
-            if date_item:
-                if field.name == 'start_date':
-                    setattr(sf, field.name, str(date_item.date()))
-            time_item = getattr(session, 'start_time')
-            if time_item:
-                if field.name == 'start_time':
-                    setattr(sf, field.name, str(time_item.time().strftime('%H:%M')))
         sf.check_initialized()
         return sf
-
 
     def _createSessionObject(self, request):
         # preload necessary data items
@@ -627,9 +620,15 @@ class ConferenceApi(remote.Service):
         else:
             data['type_of_session'] = str(data['type_of_session'])
 
+        # covert date and time to acceptable format
+        if data['start_date']:
+            data['start_date'] = datetime.strptime(data['start_date'], "%Y-%m-%d").date()
+
+        if data['start_time']:
+            data['start_time'] = datetime.strptime(data['start_time'], "%H:%M").time()
+
         # get the conference linked to this session
         conf = ndb.Key(urlsafe=request.websafeConferenceKey).get()
-
         # check that conference exists
         if not conf:
             raise endpoints.NotFoundException(
@@ -647,7 +646,7 @@ class ConferenceApi(remote.Service):
 
         # check for speaker key
         if data['speaker_key']:
-            speaker = ndb.Key(urlsafe=request.speaker_key).get()
+            speaker = ndb.Key(urlsafe=request.speaker_key.strip()).get()
 
             data['speaker'] = speaker.displayName
 
@@ -710,8 +709,7 @@ class ConferenceApi(remote.Service):
         """Gets all sessions related to a Conference based on it's speaker"""
 
         # get all sessions related to yhe speaker
-        sessions = Session.query().filter(Session.speaker_key == request.speakerKey)
-
+        sessions = Session.query(Session.speaker_key == request.speakerKey.strip())
         # send the values to SessionForms
         items = list()
         for session in sessions:
@@ -766,7 +764,7 @@ class ConferenceApi(remote.Service):
         user = self._getProfileFromUser()
 
         # current session
-        key = request.websafeSessionKey
+        key = request.websafeSessionKey.strip()
 
         # check if session already exists and add if it doesn't
         if key in user.sessionKeysWishList:
@@ -784,7 +782,7 @@ class ConferenceApi(remote.Service):
         user = self._getProfileFromUser()
 
         # current session
-        key = request.websafeSessionKey
+        key = request.websafeSessionKey.strip()
 
         # check if session already exists and add if it doesn't
         if key in user.sessionKeysWishList:
@@ -826,12 +824,10 @@ class ConferenceApi(remote.Service):
         # get session items
         items = list()
         for session in sessions:
-            speaker_keys = ndb.Key(urlsafe=session.speaker_key)
-            speakers = ndb.get_multi(speaker_keys)
-
-            for speaker in speakers:
-                copy = self._copySessionToForm(session, speaker.displayName)
-                items.append(copy)
+            speaker_key = ndb.Key(urlsafe=session.speaker_key.strip())
+            speaker = speaker_key.get()
+            copy = self._copySessionToForm(session, speaker.displayName)
+            items.append(copy)
 
         # return the SessionForm
         return SessionForms(items=items)
@@ -863,11 +859,11 @@ class ConferenceApi(remote.Service):
         return SpeakerForms(items=items)
 
 
-    @endpoints.method(CONF_GET_TIME_REQUEST, SessionForms, path='conference/{websafeConferenceKey}/before/{hours}',
+    @endpoints.method(CONF_GET_TIME_REQUEST, SessionForms, path='conference/{websafeConferenceKey}/before/workshop/{hours}',
                       http_method='GET', name='getConferenceBefore')
     def getConferenceBefore(self, request):
         """Get non-workshop conferences before the given time"""
-        c_key = ndb.Key(urlsafe=request.websafeConferenceKey)
+        c_key = ndb.Key(urlsafe=request.websafeConferenceKey.strip())
 
         query = Session.query(Session.type_of_session != 'WORKSHOP', ancestor=c_key)
 
@@ -875,7 +871,7 @@ class ConferenceApi(remote.Service):
         items = list()
         for item in query:
             hour = request.hours
-            if item.start_time.hour < hour:
+            if item.start_time.hour < int(hour):
                 items.append(self._copySessionToForm(item))
 
         return SessionForms(items=items)
