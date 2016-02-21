@@ -834,9 +834,9 @@ class ConferenceApi(remote.Service):
 
 
     ################## Task 3 #####################
-    @endpoints.method(message_types.VoidMessage, SessionForms, path='conference/partial',
-                      http_method='GET', name='getPartialConferencesSessions')
-    def getPartialConferencesSessions(self, request):
+    @endpoints.method(message_types.VoidMessage, ConferenceForms, path='conference/partial',
+                      http_method='GET', name='getPartialConferences')
+    def getPartialConferences(self, request):
         """Get all conferences whose details are only filled partially"""
         query = Conference.query(ndb.OR(Conference.description == None, Conference.startDate == None,
                                         Conference.endDate == None))
@@ -844,7 +844,7 @@ class ConferenceApi(remote.Service):
         for item in query:
             items.append(self._copyConferenceToForm(item, getattr(item.key.parent().get(), 'displayName')))
 
-        return SessionForms(items=items)
+        return ConferenceForms(items=items)
 
 
     @endpoints.method(message_types.VoidMessage, SpeakerForms, path='speakers',
