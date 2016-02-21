@@ -12,7 +12,7 @@ created by wesc on 2014 may 24
 
 __author__ = 'wesc+api@google.com (Wesley Chun)'
 
-import webapp2
+import webapp2, traceback
 from google.appengine.api import app_identity
 from google.appengine.api import mail
 from conference import ConferenceApi
@@ -49,12 +49,16 @@ class SendConfirmationEmailHandler(webapp2.RequestHandler):
 class CheckFeaturedSpeakerHandler(webapp2.RequestHandler):
     def post(self):
         """Set featured speaker."""
-        query = Session.query().filter(Session.speaker_key == self.request.get('speaker_key'))
-
-        if query.count() > 1:
-            speaker = self.request.get('speaker')
-            message = speaker + " is our featured speaker"
-            memcache.set(MEMCACHE_SPEAKER_KEY, message)
+        try:
+            print("The task")
+            query = Session.query().filter(Session.speaker_key == self.request.get('speakerKey'))
+            print("The task has been run!!")
+            if query.count() > 1:
+                speaker = self.request.get('speaker')
+                message = speaker + " is our featured speaker"
+                memcache.set(MEMCACHE_SPEAKER_KEY, message)
+        except:
+            print(traceback.format_exc())
 
 app = webapp2.WSGIApplication([
     ('/crons/set_announcement', SetAnnouncementHandler),

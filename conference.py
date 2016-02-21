@@ -657,7 +657,7 @@ class ConferenceApi(remote.Service):
         taskqueue.add(params={'sessionKey': s_key.urlsafe(),
                               'speakerKey': data['speaker_key'],
                               'speaker': data['speaker']},
-                      url='/tasks/check_speaker'
+                      url='/tasks/check_featured_speaker'
                       )
         return self._copySessionToForm(session)
 
