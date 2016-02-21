@@ -53,9 +53,18 @@ class CheckFeaturedSpeakerHandler(webapp2.RequestHandler):
             print("The task")
             query = Session.query().filter(Session.speaker_key == self.request.get('speakerKey'))
             print("The task has been run!!")
+
+            # append sessions to a string
+            sessions = ""
+
+            for q in query:
+                sessions += q.name + ", "
+
+            sessions = sessions[:-2]
+
             if query.count() > 1:
                 speaker = self.request.get('speaker')
-                message = speaker + " is our featured speaker"
+                message = speaker + " is our featured speaker and will be presenting the following sessions - " + sessions
                 memcache.set(MEMCACHE_SPEAKER_KEY, message)
         except:
             print(traceback.format_exc())

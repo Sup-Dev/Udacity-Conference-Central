@@ -846,9 +846,7 @@ class ConferenceApi(remote.Service):
 
         return ConferenceForms(items=items)
 
-
-    @endpoints.method(message_types.VoidMessage, SpeakerForms, path='speakers',
-                      http_method='GET', name='getSpeakers')
+    @endpoints.method(message_types.VoidMessage, SpeakerForms, path='speakers', http_method='GET', name='getSpeakers')
     def getSpeakers(self, request):
         """Get all speakers"""
         query = Speaker.query()
